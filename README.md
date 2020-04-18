@@ -1254,23 +1254,161 @@ new myFunction{
 3. 使用 call 改变 this 的指向
 4. 如果无返回值或者返回一个非对象值，则将 obj 返回作为新对象；如果返回值是一个新对象的话那么直接直接返回该对象。
 
-### 34 tcp三次握手
+### 34 TCP 三次握手
 
-pass
+- 第一次握手(SYN=1, seq=x):
+
+  客户端发送一个 TCP 的 SYN 标志位置1的包，指明客户端打算连接的服务器的端口，以及初始序号 X,保存在包头的序列号(Sequence Number)字段里。
+
+  发送完毕后，客户端进入 `SYN_SEND` 状态。
+
+- 第二次握手(SYN=1, ACK=1, seq=y, ACKnum=x+1):
+
+  服务器发回确认包(ACK)应答。即 SYN 标志位和 ACK 标志位均为1。服务器端选择自己 ISN 序列号，放到 Seq 域里，同时将确认序号(Acknowledgement Number)设置为客户的 ISN 加1，即X+1。 发送完毕后，服务器端进入 `SYN_RCVD` 状态。
+
+- 第三次握手(ACK=1，ACKnum=y+1)
+
+  客户端再次发送确认包(ACK)，SYN 标志位为0，ACK 标志位为1，并且把服务器发来 ACK 的序号字段+1，放在确定字段中发送给对方，并且在数据段放写ISN的+1
+
+  发送完毕后，客户端进入 `ESTABLISHED` 状态，当服务器端接收到这个包时，也进入 `ESTABLISHED` 状态，TCP 握手结束。
 
 ### 35 继承
+https://juejin.im/post/5bcb2e295188255c55472db0
+八种继承方法。
+1. 原型链继承，将子类的原型赋值为父类。
+   ~~~js
+    function SuperType() {
+        this.property = true;
+    }
 
-pass
+    SuperType.prototype.getSuperValue = function() {
+        return this.property;
+    }
+
+    function SubType() {
+        this.subproperty = false;
+    }
+
+    // 这里是关键，创建SuperType的实例，并将该实例赋值给SubType.prototype
+    SubType.prototype = new SuperType(); 
+
+    SubType.prototype.getSubValue = function() {
+        return this.subproperty;
+    }
+
+    var instance = new SubType();
+    console.log(instance.getSuperValue()); // true
+    ~~~
+
+    原型链方案存在的缺点：多个实例对引用类型的操作会被篡改。
+
+    ~~~js
+    function SuperType(){
+        this.colors = ["red", "blue", "green"];
+    }
+    function SubType(){}
+
+    SubType.prototype = new SuperType();
+
+    var instance1 = new SubType();
+    instance1.colors.push("black");
+    alert(instance1.colors); //"red,blue,green,black"
+
+    var instance2 = new SubType(); 
+    alert(instance2.colors); //"red,blue,green,black"
+    ~~~
+2. 借用父类的构造函数继承
+   ~~~js
+    function  SuperType(){
+        this.color=["red","green","blue"];
+    }
+    function  SubType(){
+        //继承自SuperType
+        SuperType.call(this);
+    }
+    var instance1 = new SubType();
+    instance1.color.push("black");
+    alert(instance1.color);//"red,green,blue,black"
+
+    var instance2 = new SubType();
+    alert(instance2.color);//"red,green,blue"
+   ~~~
+   核心代码是SuperType.call(this)，创建子类实例时调用SuperType构造函数，于是SubType的每个实例都会将SuperType中的属性复制一份。
+   缺点：
+      + 只能继承父类的实例属性和方法，不能继承原型属性/方法
+      + 无法实现复用，每个子类都有父类实例函数的副本，影响性能
+3. 组合继承
+   组合上述两种方法就是组合继承。用原型链实现对原型属性和方法的继承，用借用构造函数技术来实现实例属性的继承。
+    ~~~js
+    function SuperType(name){
+    this.name = name;
+    this.colors = ["red", "blue", "green"];
+    }
+    SuperType.prototype.sayName = function(){
+    alert(this.name);
+    };
+
+    function SubType(name, age){
+    // 继承属性
+    // 第二次调用SuperType()
+    SuperType.call(this, name);
+    this.age = age;
+    }
+
+    // 继承方法
+    // 构建原型链
+    // 第一次调用SuperType()
+    SubType.prototype = new SuperType(); 
+    // 重写SubType.prototype的constructor属性，指向自己的构造函数SubType
+    SubType.prototype.constructor = SubType; 
+    SubType.prototype.sayAge = function(){
+        alert(this.age);
+    };
+
+    var instance1 = new SubType("Nicholas", 29);
+    instance1.colors.push("black");
+    alert(instance1.colors); //"red,blue,green,black"
+    instance1.sayName(); //"Nicholas";
+    instance1.sayAge(); //29
+
+    var instance2 = new SubType("Greg", 27);
+    alert(instance2.colors); //"red,blue,green"
+    instance2.sayName(); //"Greg";
+    instance2.sayAge(); //27
+    ~~~
+    组合继承方式通过原型继承的方式继承方法，通过构造器继承的方式继承实例的属性和方法。其缺点在于不能通过原型继承的方式继承原型的属性，否则会存在多个实例对引用类型的操作会被篡改的问题。在使用子类创建实例对象时，其原型中会存在两份相同的属性/方法。
 
 ### 36 Promise
 
-pass
+https://www.cnblogs.com/lvdabao/p/es6-promise-1.html
+异步
 
 ### 37 Object.create()
 
-pass
+用于初始化一个新对象
+https://juejin.im/post/5acd8ced6fb9a028d444ee4e
+使用create创建的对象，没有任何属性，显示No properties，我们可以把它当作一个非常纯净的map来使用，我们可以自己定义hasOwnProperty、toString方法，不管是有意还是不小心，我们完全不必担心会将原型链上的同名方法覆盖掉。
+~~~js
+//Demo1:
+var a= {...省略很多属性和方法...};
+//如果想要检查a是否存在一个名为toString的属性，你必须像下面这样进行检查：
+if(Object.prototype.hasOwnProperty.call(a,'toString')){
+    ...
+}
+//为什么不能直接用a.hasOwnProperty('toString')?因为你可能给a添加了一个自定义的hasOwnProperty
+//你无法使用下面这种方式来进行判断,因为原型上的toString方法是存在的：
+if(a.toString){}
 
+//Demo2:
+var a=Object.create(null)
+//你可以直接使用下面这种方式判断，因为存在的属性，都将定义在a上面，除非手动指定原型：
+if(a.toString){}
 
+~~~
+
+你需要一个非常干净且高度可定制的对象当作数据字典的时候；
+或者想节省hasOwnProperty带来的一丢丢性能损失并且可以偷懒少些一点代码的时候
+用Object.create(null)吧！其他时候，请用{}。
 
 ### 2020前端工程师面试
 
